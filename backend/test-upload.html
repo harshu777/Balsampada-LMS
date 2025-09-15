@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Document Upload</title>
+</head>
+<body>
+    <h1>Test Document Upload</h1>
+    
+    <div id="status"></div>
+    
+    <button onclick="testRegistrationAndUpload()">Test Registration & Upload</button>
+    
+    <script>
+        async function testRegistrationAndUpload() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                // 1. Register a test student
+                statusDiv.innerHTML = '1. Registering student...';
+                const registerResponse = await fetch('http://localhost:3001/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: `test${Date.now()}@example.com`,
+                        password: 'Test123!',
+                        firstName: 'Test',
+                        lastName: 'Student',
+                        phone: '1234567890',
+                        address: 'Test Address',
+                        role: 'STUDENT'
+                    })
+                });
+                
+                const registerData = await registerResponse.json();
+                console.log('Registration response:', registerData);
+                statusDiv.innerHTML += '<br>Registration successful!';
+                statusDiv.innerHTML += '<br>Access Token: ' + (registerData.accessToken ? 'Received' : 'Not received');
+                
+                if (!registerData.accessToken) {
+                    throw new Error('No access token received');
+                }
+                
+                // 2. Create a test file
+                statusDiv.innerHTML += '<br><br>2. Creating test file...';
+                const blob = new Blob(['%PDF-1.4\nTest PDF Document'], { type: 'application/pdf' });
+                const file = new File([blob], 'test-document.pdf', { type: 'application/pdf' });
+                
+                // 3. Upload document
+                statusDiv.innerHTML += '<br>3. Uploading document...';
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('type', 'id_proof');
+                formData.append('description', 'Test ID proof document');
+                
+                const uploadResponse = await fetch('http://localhost:3001/api/documents/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${registerData.accessToken}`
+                    },
+                    body: formData
+                });
+                
+                if (!uploadResponse.ok) {
+                    const errorData = await uploadResponse.json();
+                    throw new Error(`Upload failed: ${errorData.message}`);
+                }
+                
+                const uploadData = await uploadResponse.json();
+                console.log('Upload response:', uploadData);
+                statusDiv.innerHTML += '<br>Upload successful!';
+                statusDiv.innerHTML += '<br>Document ID: ' + uploadData.id;
+                statusDiv.innerHTML += '<br>File URL: ' + uploadData.fileUrl;
+                
+                statusDiv.innerHTML += '<br><br><strong>✅ Test complete! Document uploaded successfully.</strong>';
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                statusDiv.innerHTML += '<br><br><strong>❌ Test failed: ' + error.message + '</strong>';
+            }
+        }
+    </script>
+</body>
+</html>

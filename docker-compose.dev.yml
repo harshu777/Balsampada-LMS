@@ -1,0 +1,54 @@
+version: '3.8'
+
+# Development-specific configuration
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+
+  # Prisma Studio for database management
+  prisma-studio:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tution-lms-prisma-studio
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-tuition_lms}?schema=public
+    ports:
+      - "5555:5555"
+    depends_on:
+      - postgres
+    networks:
+      - tution-lms-network
+    command: npx prisma studio
+
+  # Mailhog for email testing
+  mailhog:
+    image: mailhog/mailhog
+    container_name: tution-lms-mailhog
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    networks:
+      - tution-lms-network

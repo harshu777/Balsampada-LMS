@@ -1,0 +1,438 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PARTIAL
+}
+
+enum PaymentType {
+  ENROLLMENT_FEE
+  MONTHLY_FEE
+  EXAM_FEE
+  MATERIAL_FEE
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  ONLINE
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum NotificationType {
+  SYSTEM
+  APPROVAL
+  PAYMENT
+  CLASS
+  ASSIGNMENT
+  TEST
+  MESSAGE
+}
+
+model User {
+  id                String           @id @default(uuid())
+  email             String           @unique
+  password          String
+  firstName         String
+  lastName          String
+  phone             String?
+  address           String?
+  profileImage      String?
+  role              Role
+  status            UserStatus       @default(PENDING)
+  refreshToken      String?
+  emailVerified     Boolean          @default(false)
+  emailVerificationToken String?
+  resetPasswordToken String?
+  resetPasswordExpiry DateTime?
+  lastLogin         DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  documents         Document[]
+  teacherSubjects   TeacherSubject[]
+  studentEnrollments StudentEnrollment[]
+  sentMessages      Message[]        @relation("SentMessages")
+  receivedMessages  Message[]        @relation("ReceivedMessages")
+  notifications     Notification[]
+  attendance        Attendance[]
+  studentPayments   Payment[]        @relation("StudentPayments")
+  paymentsMade      Payment[]        @relation("PaymentsMade")
+  paymentsApproved  Payment[]        @relation("PaymentsApproved")
+  assignments       Assignment[]     @relation("TeacherAssignments")
+  studentAssignments StudentAssignment[]
+  tests             Test[]           @relation("TeacherTests")
+  studentTests      StudentTest[]
+  announcements     Announcement[]
+  uploadedMaterials Material[]
+  liveSessions      LiveSession[]    @relation("TeacherSessions")
+  sessionAttendees  SessionAttendee[]
+}
+
+model Class {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  grade       String?
+  academicYear String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  subjects    Subject[]
+  announcements Announcement[]
+}
+
+model Subject {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  classId     String
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teachers    TeacherSubject[]
+  enrollments StudentEnrollment[]
+  materials   Material[]
+  assignments Assignment[]
+  tests       Test[]
+  liveSessions LiveSession[]
+  timetables  Timetable[]
+  messages    Message[]
+  attendances Attendance[]
+}
+
+model TeacherSubject {
+  id        String   @id @default(uuid())
+  teacherId String
+  subjectId String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId])
+}
+
+model StudentEnrollment {
+  id            String        @id @default(uuid())
+  studentId     String
+  subjectId     String
+  enrollmentDate DateTime     @default(now())
+  paymentStatus PaymentStatus @default(PENDING)
+  isActive      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  student       User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  payments      Payment[]
+
+  @@unique([studentId, subjectId])
+}
+
+model Document {
+  id         String         @id @default(uuid())
+  userId     String
+  type       String
+  fileName   String
+  fileUrl    String
+  fileSize   Int?
+  mimeType   String?
+  status     DocumentStatus @default(PENDING)
+  reviewedBy String?
+  reviewNotes String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  enrollmentId  String?
+  studentId     String
+  amount        Float
+  type          PaymentType   @default(MONTHLY_FEE)
+  method        PaymentMethod @default(CASH)
+  paidBy        String
+  approvedBy    String?
+  status        PaymentStatus @default(PENDING)
+  paymentDate   DateTime      @default(now())
+  approvalDate  DateTime?
+  dueDate       DateTime?
+  receiptNumber String?       @unique
+  description   String?
+  notes         String?
+  proofFileUrl  String?
+  proofFileName String?
+  rejectionReason String?
+  monthYear     String?       // For monthly fee tracking (e.g., "2024-09")
+  academicYear  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  enrollment     StudentEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  student        User               @relation("StudentPayments", fields: [studentId], references: [id])
+  paidByUser     User               @relation("PaymentsMade", fields: [paidBy], references: [id])
+  approvedByUser User?              @relation("PaymentsApproved", fields: [approvedBy], references: [id])
+
+  @@index([studentId, status])
+  @@index([status, createdAt])
+  @@index([monthYear, studentId])
+}
+
+model Material {
+  id            String   @id @default(uuid())
+  subjectId     String
+  title         String
+  description   String?
+  type          String?
+  fileUrl       String?
+  fileName      String?
+  fileSize      Int?
+  fileType      String?
+  content       String?
+  uploadedById  String
+  downloadCount Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  subjectId   String
+  teacherId   String
+  title       String
+  description String?
+  instructions String?
+  attachmentUrl String?
+  totalMarks  Int?
+  dueDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher     User     @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  submissions StudentAssignment[]
+}
+
+model StudentAssignment {
+  id           String   @id @default(uuid())
+  assignmentId String
+  studentId    String
+  submissionUrl String?
+  submissionText String?
+  marksObtained Int?
+  feedback     String?
+  submittedAt  DateTime?
+  gradedAt     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+}
+
+model Test {
+  id          String   @id @default(uuid())
+  subjectId   String
+  teacherId   String
+  title       String
+  description String?
+  questions   Json
+  totalMarks  Int
+  duration    Int
+  startTime   DateTime
+  endTime     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher     User     @relation("TeacherTests", fields: [teacherId], references: [id])
+  attempts    StudentTest[]
+}
+
+model StudentTest {
+  id           String   @id @default(uuid())
+  testId       String
+  studentId    String
+  answers      Json
+  marksObtained Int?
+  feedback     String?
+  startedAt    DateTime @default(now())
+  submittedAt  DateTime?
+  attemptedAt  DateTime @default(now())
+  isPassed     Boolean  @default(false)
+  isCompleted  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  test         Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  student      User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, studentId])
+}
+
+model Attendance {
+  id        String           @id @default(uuid())
+  studentId String
+  sessionId String?
+  subjectId String?
+  date      DateTime         @default(now())
+  status    AttendanceStatus
+  markedBy  String?
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  student   User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session   LiveSession?     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  subject   Subject?         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, sessionId])
+}
+
+model LiveSession {
+  id          String   @id @default(uuid())
+  subjectId   String
+  teacherId   String
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  meetingUrl  String?
+  recordingUrl String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher     User     @relation("TeacherSessions", fields: [teacherId], references: [id])
+  attendance  Attendance[]
+  attendees   SessionAttendee[]
+}
+
+model SessionAttendee {
+  id        String   @id @default(uuid())
+  sessionId String
+  userId    String
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  subjectId  String?
+  content    String
+  isRead     Boolean  @default(false)
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  subject    Subject? @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  classId   String?
+  authorId  String
+  title     String
+  content   String
+  priority  String   @default("normal")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  class     Class?   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Timetable {
+  id          String    @id @default(uuid())
+  subjectId   String
+  dayOfWeek   Int       // 0 = Sunday, 6 = Saturday
+  startTime   String    // HH:MM format
+  endTime     String    // HH:MM format
+  roomNumber  String?
+  isRecurring Boolean   @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+}

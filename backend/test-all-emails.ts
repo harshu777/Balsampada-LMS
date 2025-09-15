@@ -1,0 +1,146 @@
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './src/app.module';
+import { EmailService } from './src/email/email.service';
+
+async function testAllEmails() {
+  console.log('🚀 Starting comprehensive email template test...\n');
+  
+  try {
+    // Create a standalone application context
+    const app = await NestFactory.createApplicationContext(AppModule);
+    
+    // Get the EmailService instance
+    const emailService = app.get(EmailService);
+    
+    const testEmail = 'hbaviskar777@gmail.com';
+    const testName = 'Harshal Baviskar';
+    
+    console.log('📧 Testing all email templates...\n');
+    
+    // Test 1: Welcome Back Email (Login)
+    console.log('1️⃣ Sending Welcome Back email...');
+    const welcomeResult = await emailService.sendWelcomeBackEmail(
+      testEmail,
+      testName,
+      'STUDENT'
+    );
+    console.log(welcomeResult ? '✅ Welcome Back email sent!' : '❌ Failed to send Welcome Back email');
+    
+    // Small delay between emails
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 2: Verification Email
+    console.log('\n2️⃣ Sending Verification email...');
+    const verificationResult = await emailService.sendVerificationEmail(
+      testEmail,
+      testName,
+      'test-verification-token-123456'
+    );
+    console.log(verificationResult ? '✅ Verification email sent!' : '❌ Failed to send Verification email');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 3: Password Reset Email
+    console.log('\n3️⃣ Sending Password Reset email...');
+    const resetResult = await emailService.sendPasswordResetEmail(
+      testEmail,
+      testName,
+      'test-reset-token-789012'
+    );
+    console.log(resetResult ? '✅ Password Reset email sent!' : '❌ Failed to send Password Reset email');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 4: Approval Email (Approved)
+    console.log('\n4️⃣ Sending Account Approved email...');
+    const approvalResult = await emailService.sendApprovalEmail(
+      testEmail,
+      testName,
+      'APPROVED'
+    );
+    console.log(approvalResult ? '✅ Account Approved email sent!' : '❌ Failed to send Account Approved email');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 5: Approval Email (Rejected)
+    console.log('\n5️⃣ Sending Account Rejected email...');
+    const rejectionResult = await emailService.sendApprovalEmail(
+      testEmail,
+      testName,
+      'REJECTED',
+      'Documents incomplete - Please upload all required identification documents'
+    );
+    console.log(rejectionResult ? '✅ Account Rejected email sent!' : '❌ Failed to send Account Rejected email');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 6: Payment Confirmation (Approved)
+    console.log('\n6️⃣ Sending Payment Approved email...');
+    const paymentApprovedResult = await emailService.sendPaymentConfirmationEmail(
+      testEmail,
+      testName,
+      5000,
+      'APPROVED',
+      'Monthly Tuition Fee'
+    );
+    console.log(paymentApprovedResult ? '✅ Payment Approved email sent!' : '❌ Failed to send Payment Approved email');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 7: Payment Confirmation (Rejected)
+    console.log('\n7️⃣ Sending Payment Rejected email...');
+    const paymentRejectedResult = await emailService.sendPaymentConfirmationEmail(
+      testEmail,
+      testName,
+      3000,
+      'REJECTED',
+      'Course Registration Fee',
+      'Invalid payment details provided'
+    );
+    console.log(paymentRejectedResult ? '✅ Payment Rejected email sent!' : '❌ Failed to send Payment Rejected email');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test 8: Class Reminder Email
+    console.log('\n8️⃣ Sending Class Reminder email...');
+    const reminderResult = await emailService.sendClassReminderEmail(
+      [testEmail],
+      'Advanced Mathematics - Calculus',
+      'Prof. Sharma',
+      new Date(Date.now() + 30 * 60 * 1000) // 30 minutes from now
+    );
+    console.log(reminderResult ? '✅ Class Reminder email sent!' : '❌ Failed to send Class Reminder email');
+    
+    // Summary
+    console.log('\n' + '='.repeat(50));
+    console.log('📊 Email Test Summary:');
+    console.log('='.repeat(50));
+    console.log(`
+    ✉️ Total emails sent: 8
+    📬 Recipient: ${testEmail}
+    
+    Templates tested:
+    1. Welcome Back (Login notification)
+    2. Email Verification
+    3. Password Reset
+    4. Account Approved
+    5. Account Rejected (with reason)
+    6. Payment Approved
+    7. Payment Rejected (with reason)
+    8. Class Reminder
+    `);
+    console.log('='.repeat(50));
+    console.log('\n✨ All email templates have been sent successfully!');
+    console.log('📬 Please check your inbox at', testEmail);
+    console.log('📁 Also check your spam folder if you don\'t see them');
+    
+    // Close the application
+    await app.close();
+  } catch (error) {
+    console.error('❌ Error:', error);
+    process.exit(1);
+  }
+}
+
+// Run the test
+testAllEmails();
