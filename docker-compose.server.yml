@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: balsampada-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: balsampada_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - balsampada-network
+    restart: unless-stopped
+
+  backend:
+    image: harsh1106/balsampada-backend:latest
+    container_name: balsampada-backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-postgres123}@postgres:5432/balsampada_db?schema=public
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production-min-32-chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-this}
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: 587
+      EMAIL_USER: ${EMAIL_USER:-your-email@gmail.com}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-your-app-password}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@balsampada.com}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      PORT: 3001
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+    networks:
+      - balsampada-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npm run start:prod
+      "
+
+  frontend:
+    image: harsh1106/balsampada-frontend:latest
+    container_name: balsampada-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
+    ports:
+      - "3000:3000"
+    networks:
+      - balsampada-network
+    restart: unless-stopped
+
+networks:
+  balsampada-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
