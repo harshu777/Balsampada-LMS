@@ -467,7 +467,13 @@ export default function ClassesPage() {
           setIsModalOpen(false);
           setSelectedClass(null);
         }}
-        onSave={selectedClass ? handleUpdateClass : handleCreateClass}
+        onSave={(data: any) => {
+          if (selectedClass) {
+            handleUpdateClass(data as UpdateClassDto);
+          } else {
+            handleCreateClass(data as CreateClassDto);
+          }
+        }}
         classData={selectedClass}
         isLoading={isSubmitting}
       />

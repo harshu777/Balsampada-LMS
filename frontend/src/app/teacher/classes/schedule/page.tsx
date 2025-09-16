@@ -426,7 +426,7 @@ export default function TeacherSchedulePage() {
               <button
                 onClick={() => {
                   setShowAddModal(false);
-                  toast.info('Class schedule feature coming soon!');
+                  toast('Class schedule feature coming soon!');
                 }}
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               >

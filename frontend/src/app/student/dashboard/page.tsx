@@ -62,6 +62,7 @@ export default function StudentDashboard() {
     averageGrade: dashboardData.averageGrade || 0,
     attendance: dashboardData.attendancePercentage || 0,
     upcomingTests: dashboardData.upcomingTests || 0,
+    nextClass: '2 hours',
   } : {
     enrolledClasses: 0,
     completedLessons: 0,
@@ -69,6 +70,7 @@ export default function StudentDashboard() {
     averageGrade: 0,
     attendance: 0,
     upcomingTests: 0,
+    nextClass: '2 hours',
   };
 
   const upcomingClasses = [
@@ -267,7 +269,7 @@ export default function StudentDashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {upcomingClasses.map((class_) => (
+              {upcomingClasses.map((class_: any) => (
                 <div key={class_.id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
@@ -313,7 +315,7 @@ export default function StudentDashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {pendingAssignments.map((assignment) => (
+              {pendingAssignments.map((assignment: any) => (
                 <div key={assignment.id} className="p-3 border border-neutral-200 rounded-lg">
                   <p className="font-medium text-neutral-900 text-sm">{assignment.title}</p>
                   <p className="text-xs text-neutral-600 mt-1">{assignment.subject}</p>
@@ -350,7 +352,7 @@ export default function StudentDashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {recentGrades.map((grade) => (
+              {recentGrades.map((grade: any) => (
                 <div key={grade.id} className="flex items-center justify-between">
                   <div className="flex-1">
                     <p className="font-medium text-neutral-900 text-sm">{grade.assessment}</p>
@@ -383,7 +385,7 @@ export default function StudentDashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {studyMaterials.map((material) => (
+              {studyMaterials.map((material: any) => (
                 <div key={material.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${

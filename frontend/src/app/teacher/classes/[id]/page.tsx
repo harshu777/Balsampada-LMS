@@ -389,7 +389,9 @@ function AssignmentsTab({ subject }: { subject: Subject }) {
                   )}
                   <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                     <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
-                    <span>Created: {new Date(assignment.createdAt).toLocaleDateString()}</span>
+                    {(assignment as any).createdAt && (
+                      <span>Created: {new Date((assignment as any).createdAt).toLocaleDateString()}</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex space-x-2 ml-4">

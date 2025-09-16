@@ -1,0 +1,380 @@
+# Complete Kubernetes deployment for Tuition LMS
+# Based on the actual project structure and requirements
+# Author: Harshal Baviskar
+# Project: Tuition LMS with Student, Teacher, and Admin roles
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tuition-lms
+---
+# ConfigMap for non-sensitive configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tuition-lms-config
+  namespace: tuition-lms
+data:
+  NODE_ENV: "production"
+  PORT: "3001"
+  FRONTEND_PORT: "3000"
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "tuition_lms"  # Updated to match actual DB name
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  MAIL_HOST: "smtp.gmail.com"
+  MAIL_PORT: "587"
+  MAIL_FROM: "noreply@balsampada.com"  # Using your domain
+  APP_URL: "https://balsampada.com"
+  BACKEND_URL: "https://api.balsampada.com"
+---
+# Secret for sensitive data (you'll need to update these values)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tuition-lms-secrets
+  namespace: tuition-lms
+type: Opaque
+stringData:
+  JWT_SECRET: "change-this-to-your-jwt-secret"
+  JWT_REFRESH_SECRET: "change-this-to-your-refresh-secret"
+  DB_PASSWORD: "change-this-to-secure-password"
+  MAIL_USER: "your-email@gmail.com"
+  MAIL_PASS: "your-app-specific-password"
+---
+# PostgreSQL StatefulSet with Persistent Storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: tuition-lms
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: tuition-lms
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: tuitionlms
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tuition-lms-secrets
+              key: DB_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: tuition-lms
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: tuition-lms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: tuition-lms
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: tuition-lms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done;']
+      containers:
+      - name: backend
+        image: harshalbaviskar/tuition-lms-backend:latest  # Updated with your Docker Hub username
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DB_PASSWORD)@postgres-service:5432/tuition_lms?schema=public"
+        envFrom:
+        - configMapRef:
+            name: tuition-lms-config
+        - secretRef:
+            name: tuition-lms-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3001
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: tuition-lms
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+  - port: 3001
+    targetPort: 3001
+    name: http
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: tuition-lms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: harshalbaviskar/tuition-lms-frontend:latest  # Updated with your Docker Hub username
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://backend-service:3001/api"
+        - name: NEXT_PUBLIC_APP_URL
+          value: "https://balsampada.com"
+        envFrom:
+        - configMapRef:
+            name: tuition-lms-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: tuition-lms
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+---
+# Ingress for external access (requires nginx-ingress controller)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tuition-lms-ingress
+  namespace: tuition-lms
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/client-max-body-size: "50m"
+    # Uncomment for SSL with cert-manager
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: balsampada.com  # Your main domain
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 3001
+      - path: /socket.io
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 3001
+      - path: /uploads
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 3001
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 3000
+  - host: www.balsampada.com  # WWW subdomain
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 3001
+      - path: /socket.io
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 3001
+      - path: /uploads
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 3001
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 3000
+  # Uncomment for SSL (recommended for production)
+  # tls:
+  # - hosts:
+  #   - balsampada.com
+  #   - www.balsampada.com
+  #   secretName: tuition-lms-tls

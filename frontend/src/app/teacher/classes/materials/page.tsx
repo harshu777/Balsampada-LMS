@@ -293,7 +293,8 @@ export default function MaterialsPage() {
       
       // setMaterials(mockMaterials);
       setLoading(false);
-  }, []);
+    }
+  }, [materials.length, loading]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -610,7 +611,7 @@ export default function MaterialsPage() {
             <div>
               <p className="text-sm text-neutral-600">Total Downloads</p>
               <p className="text-2xl font-bold text-neutral-900">
-                {materials.reduce((sum, m) => sum + m.downloads, 0)}
+                {materials.reduce((sum, m) => sum + ((m as any).downloads || 0), 0)}
               </p>
             </div>
           </div>

@@ -171,7 +171,7 @@ export default function StudentsPage() {
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
 
   const getStatusBadge = (status: string) => {
-    const badges = {
+    const badges: Record<string, string> = {
       'APPROVED': 'bg-green-100 text-green-800',
       'PENDING': 'bg-yellow-100 text-yellow-800',
       'SUSPENDED': 'bg-red-100 text-red-800',

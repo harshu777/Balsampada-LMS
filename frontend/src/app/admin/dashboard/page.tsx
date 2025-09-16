@@ -301,7 +301,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
-                {pendingApprovals.map((approval) => (
+                {pendingApprovals.map((approval: any) => (
                   <tr key={approval.id} className="hover:bg-neutral-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-neutral-900">{approval.name}</div>
@@ -356,7 +356,7 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-semibold text-neutral-900">Recent Activities</h2>
           </div>
           <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
-            {recentActivities.map((activity) => (
+            {recentActivities.map((activity: any) => (
               <div key={activity.id} className="flex gap-3">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${activity.color}`}>
                   <activity.icon className="h-5 w-5" />
@@ -387,7 +387,7 @@ export default function AdminDashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {pendingPayments.map((payment) => (
+              {pendingPayments.map((payment: any) => (
                 <div key={payment.id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
                   <div className="flex-1">
                     <p className="font-medium text-neutral-900">{payment.student}</p>
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {upcomingClasses.map((class_) => (
+              {upcomingClasses.map((class_: any) => (
                 <div key={class_.id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">

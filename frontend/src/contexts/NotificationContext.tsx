@@ -62,7 +62,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [unreadCount, setUnreadCount] = useState(0);
   const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
   
-  const { token, user } = useAuth();
+  const { user } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+
+  // Get token from localStorage
+  useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+    setToken(accessToken);
+  }, [user]);
 
   // Connect to notification socket
   useEffect(() => {
@@ -88,7 +95,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      maxReconnectionAttempts: 5,
+      reconnectionAttempts: 5,
     });
 
     // Connection events

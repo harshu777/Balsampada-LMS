@@ -53,7 +53,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-  const { token, user } = useAuth();
+  const { user } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+
+  // Get token from localStorage
+  useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+    setToken(accessToken);
+  }, [user]);
 
   const connect = useCallback(() => {
     if (!token || socket?.connected) return;
@@ -69,7 +76,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      maxReconnectionAttempts: 5,
+      reconnectionAttempts: 5,
     });
 
     // Connection event handlers

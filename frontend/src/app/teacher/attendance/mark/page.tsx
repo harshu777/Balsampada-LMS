@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Users,
@@ -20,7 +20,7 @@ import {
 import Link from 'next/link';
 import { attendanceService } from '@/services/attendance.service';
 
-export default function MarkAttendancePage() {
+function MarkAttendanceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = searchParams?.get('sessionId');
@@ -380,5 +380,20 @@ export default function MarkAttendancePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MarkAttendancePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-neutral-600">Loading attendance...</p>
+        </div>
+      </div>
+    }>
+      <MarkAttendanceContent />
+    </Suspense>
   );
 }

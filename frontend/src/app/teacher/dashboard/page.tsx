@@ -61,6 +61,8 @@ export default function TeacherDashboard() {
     todayClasses: dashboardData.todaysClasses || 0,
     totalTests: dashboardData.totalTests || 0,
     totalMaterials: dashboardData.totalMaterials || 0,
+    averageAttendance: dashboardData.averageAttendance || 85,
+    pendingPayments: dashboardData.pendingPayments || 0,
   } : {
     totalStudents: 0,
     activeClasses: 0,
@@ -68,6 +70,8 @@ export default function TeacherDashboard() {
     todayClasses: 0,
     totalTests: 0,
     totalMaterials: 0,
+    averageAttendance: 85,
+    pendingPayments: 0,
   };
 
   const todaySchedule = [

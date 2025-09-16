@@ -78,7 +78,7 @@ export default function StudentAssignmentsPage() {
   };
 
   const getGradeDisplay = (assignment: StudentAssignment) => {
-    if (assignment.gradedAt && assignment.marksObtained !== null && assignment.assignment?.totalMarks) {
+    if (assignment.gradedAt && assignment.marksObtained !== null && assignment.marksObtained !== undefined && assignment.assignment?.totalMarks) {
       const percentage = ((assignment.marksObtained / assignment.assignment.totalMarks) * 100).toFixed(1);
       return (
         <div className="text-center">

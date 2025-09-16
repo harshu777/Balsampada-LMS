@@ -94,22 +94,6 @@ class ApiService {
     return response.data;
   }
 
-  // Notification endpoints
-  async getNotifications() {
-    const response = await this.api.get('/notifications');
-    return response.data;
-  }
-
-  async markNotificationAsRead(id: string) {
-    const response = await this.api.patch(`/notifications/${id}/read`);
-    return response.data;
-  }
-
-  async markAllNotificationsAsRead() {
-    const response = await this.api.patch('/notifications/read-all');
-    return response.data;
-  }
-
   async clearNotifications() {
     const response = await this.api.delete('/notifications/clear');
     return response.data;
@@ -459,21 +443,6 @@ class ApiService {
     return response.data;
   }
 
-  // Message endpoints
-  async getMessages() {
-    const response = await this.api.get('/messages');
-    return response.data;
-  }
-
-  async sendMessage(receiverId: string, content: string) {
-    const response = await this.api.post('/messages', { receiverId, content });
-    return response.data;
-  }
-
-  async getConversation(userId: string) {
-    const response = await this.api.get(`/messages/conversation/${userId}`);
-    return response.data;
-  }
 }
 
 export default new ApiService();

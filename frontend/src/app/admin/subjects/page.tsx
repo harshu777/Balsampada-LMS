@@ -521,7 +521,13 @@ export default function SubjectsPage() {
           setIsModalOpen(false);
           setSelectedSubject(null);
         }}
-        onSave={selectedSubject ? handleUpdateSubject : handleCreateSubject}
+        onSave={(data: any) => {
+          if (selectedSubject) {
+            handleUpdateSubject(data);
+          } else {
+            handleCreateSubject(data);
+          }
+        }}
         subjectData={selectedSubject}
         isLoading={isSubmitting}
         classes={classes}

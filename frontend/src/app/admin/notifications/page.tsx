@@ -31,7 +31,7 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await ApiService.getNotifications(page, 20);
+      const response = await ApiService.getNotifications();
       setNotifications(response.notifications || []);
       setTotalPages(response.totalPages || 1);
     } catch (error: any) {
