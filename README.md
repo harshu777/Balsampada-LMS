@@ -60,8 +60,8 @@ services:
   frontend:
     image: harsh1106/balsampada-frontend:latest
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001/api
-      NEXT_PUBLIC_BACKEND_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: https://localhost:3001/api
+      NEXT_PUBLIC_BACKEND_URL: https://localhost:3001
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -76,8 +76,8 @@ docker-compose up -d
 ```
 
 3. Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+- Frontend: https://localhost:3000
+- Backend API: https://localhost:3001
 
 ## Default Credentials
 
@@ -128,9 +128,3 @@ npm run dev
 - Backend: `harsh1106/balsampada-backend`
 
 ## License
-
-MIT
-
-## Author
-
-Harshal Baviskar
