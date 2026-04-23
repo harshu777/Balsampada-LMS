@@ -1,5 +1,4 @@
-# Development Dockerfile for hot-reloading
-FROM node:20-alpine
+FROM node:20.4-alpine
 
 # Set working directory
 WORKDIR /app
@@ -12,6 +11,10 @@ RUN npm install
 
 # Expose port
 EXPOSE 3000
+
+# Set non-root user
+RUN addgroup -g 1001 nodeuser && adduser -u 1001 -G nodeuser -s /bin/sh -D nodeuser
+USER nodeuser
 
 # Start development server with hot-reloading
 CMD ["npm", "run", "dev"]
